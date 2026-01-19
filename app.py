@@ -43,3 +43,58 @@ except Exception as e:
     st.error(f"❌ Erro crítico ao processar os dados: {e}")
     st.stop()
 
+# --- Interface e Filtros ---
+try:
+    st.sidebar.header("Filtros")
+    
+    # Filtro de Bairro
+    bairros = df['bairro'].unique()
+    bairro_selecionado = st.sidebar.multiselect(
+        "Filtrar por Bairro", options=bairros, default=bairros
+    )
+    
+    # Filtro de Tipo
+    tipos = df['tipo_ocorrencia'].unique()
+    tipo_selecionado = st.sidebar.multiselect(
+        "Tipo de Ocorrência", options=tipos, default=tipos
+    )
+
+    # Aplicação dos filtros
+    df_filtrado = df[
+        (df['bairro'].isin(bairro_selecionado)) & 
+        (df['tipo_ocorrencia'].isin(tipo_selecionado))
+    ]
+
+    if df_filtrado.empty:
+        st.warning("⚠️ Nenhum dado encontrado com esses filtros.")
+        st.stop()
+
+    # --- Visualizações ---
+    col1, col2 = st.columns(2)
+
+    # Gráfico 1: Temporal
+    with col1:
+        st.subheader("Horários Críticos")
+        fig_hist = px.histogram(df_filtrado, x="hora", nbins=24, title="Crimes por Hora")
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+    # Gráfico 2: Mapa
+    with col2:
+        st.subheader("Mapa de Calor")
+        fig_map = px.density_mapbox(
+            df_filtrado, 
+            lat='latitude', 
+            lon='longitude', 
+            radius=15,
+            center=dict(lat=-5.08, lon=-42.80), 
+            zoom=11,
+            mapbox_style="open-street-map"
+        )
+        st.plotly_chart(fig_map, use_container_width=True)
+
+    # Tabela
+    st.divider()
+    st.dataframe(df_filtrado.head(50))
+
+except Exception as e:
+    st.error(f"❌ Erro na visualização: {e}")
